@@ -1,0 +1,284 @@
+ //Step #1 클러스터 개수를 정해줍니다
+        const int clusterNum = 5;                 //클러스터 개수
+        int[] centerNum = new int[clusterNum];    //중심 좌표
+        int[] colorCount = new int[256];          //256가지 색상의 개수 [EX 234번의 색깔은 4365개가 있다]
+        int[,] sumCount = new int[clusterNum, 2]; //중심좌표를 구하기 위한 2차원 배열
+                                                  //0 = 분모 (색상의 개수)
+                                                  //1 = 분자 (색상 * 색상의 개수)
+        int option = 0;                           //반복문 종료
+        int[,,] color;
+        int[,,] orignal;
+        
+
+        public Cmeans(int[,,] getColor) {
+            color = new int[getColor.GetLength(0), getColor.GetLength(1), getColor.GetLength(2)];
+
+            for (int x = 0; x < color.GetLength(0); x++)
+                for (int y = 0; y < color.GetLength(1); y++)
+                {
+                    color[x, y, 0] = getColor[x, y, 0];
+                    color[x, y, 1] = getColor[x, y, 1];
+                    color[x, y, 2] = getColor[x, y, 2];
+                }
+            orignal = getColor;
+            processing();
+           
+            Pallete_set();
+            //Select(0); //<-보고싶은 부분만 선택하는 함수
+        }
+        
+        private void processing() {
+            //Step #2 클러스터의 중심 좌표를 정적으로 할당 해줍니다. [255는 색상의 최대값]
+            for (int i = 0; i < clusterNum; i++)
+            {
+                int h = 255 / clusterNum;
+                centerNum[i] = h + h * i;
+            }
+
+            //컬러 색상의 개수를 구함
+            for (int x = 0; x < color.GetLength(0); x++)
+                for (int y = 0; y < color.GetLength(1); y++)
+                {
+                    colorCount[color[x, y, 0]]++;
+                }
+
+            do
+            {
+                //Step #3 클러스터 범위 기준으로 중심좌표를 설정합니다 [중심좌표 =시그마(색상*개수)/시그마(개수)]
+                for (int i = 0; i < 255; i++) //256은 색상의 최대값 [0~255]
+                {
+                    int sum = i * colorCount[i]; //개수랑 색상의 곱
+                    for (int j = 0; j < clusterNum; j++)
+                    {
+                        int startPoint = j == 0 ? 0 : (centerNum[j - 1] + centerNum[j]) / 2;//0 보다 작으면 0
+                        int endPoint = j == clusterNum - 1 ? 255 : (centerNum[j] + centerNum[j + 1]) / 2;//클러스터개수 보다 크면 255
+                        if (startPoint <= i && i <= endPoint)
+                        {
+                            sumCount[j, 0] = sumCount[j, 0] + colorCount[i];
+                            sumCount[j, 1] = sumCount[j, 1] + sum;
+                        }
+                    }
+                }
+
+                // Step #4 중심좌표가 이전 좌표와 같은지 확인합니다
+                //다르면 3번으로 가서 반복합니다.
+                for (int i = 0; i < clusterNum; i++)
+                {
+                    sumCount[i, 0] = sumCount[i, 0] == 0 ? 1 : sumCount[i, 0];
+                    if (centerNum[i] == sumCount[i, 1] / sumCount[i, 0])
+                    {
+                        option++;
+                    }
+                    else
+                    {
+                        option = 0;
+                        centerNum[i] = sumCount[i, 1] / sumCount[i, 0];
+                    }
+                }
+            } while (option <= clusterNum);
+
+            for (int x = 0; x < color.GetLength(0); x++)
+                for (int y = 0; y < color.GetLength(1); y++)
+                    for (int j = 0; j < clusterNum; j++)
+                    {
+                        int startPoint = j == 0 ? 0 : (centerNum[j - 1] + centerNum[j]) / 2;//0 보다 작으면 0
+                        int endPoint = j == clusterNum - 1 ? 255 : (centerNum[j] + centerNum[j + 1]) / 2;//클러스터개수 보다 크면 255
+                        if (startPoint <= color[x, y, 0] && color[x, y, 0] <= endPoint)
+                        {
+                            //하얀색 부분은 제외해서 회전근개 영역이 아닌 부분은 흰색으로 색칠함.
+                            //if (color[x, y, 0] == 255 && color[x, y, 1] == 255 && color[x, y, 2] == 255)
+                            //{
+                            //    color[x, y, 0] = 255;
+                            //    color[x, y, 1] = 255;
+                            //    color[x, y, 2] = 255;
+                            //}
+                            //else
+                            //{
+                            //    color[x, y, 0] = centerNum[j];
+                            //    color[x, y, 1] = centerNum[j];
+                            //    color[x, y, 2] = centerNum[j];
+                            //}
+                            orignal[x, y, 0] = centerNum[j];
+                            orignal[x, y, 1] = centerNum[j];
+                            orignal[x, y, 2] = centerNum[j];
+                        }
+                    }
+        }
+
+        int[,] pallete;
+        void Pallete_set()
+        {
+            pallete = new int[clusterNum, 3];
+
+            pallete[0, 0] = 255;
+            pallete[0, 1] = 0;
+            pallete[0, 2] = 0;
+
+            pallete[1, 0] = 16;
+            pallete[1, 1] = 247;
+            pallete[1, 2] = 243;
+
+            pallete[2, 0] = 14;
+            pallete[2, 1] = 222;
+            pallete[2, 2] = 245;
+
+            pallete[3, 0] = 134;
+            pallete[3, 1] = 220;
+            pallete[3, 2] = 39;
+
+            pallete[4, 0] = 227;
+            pallete[4, 1] = 223;
+            pallete[4, 2] = 31;
+            /*
+            pallete[5, 0] = 247;
+            pallete[5, 1] = 146;
+            pallete[5, 2] = 21;
+
+            pallete[6, 0] = 255;
+            pallete[6, 1] = 0;
+            pallete[6, 2] = 223;
+
+
+            pallete[7, 0] = 207;
+            pallete[7, 1] = 104;
+            pallete[7, 2] = 48;
+
+
+            pallete[8, 0] = 255;
+            pallete[8, 1] = 0;
+            pallete[8, 2] = 0;
+
+            
+            pallete[0, 0] = 255;
+            pallete[0, 1] = 0;
+            pallete[0, 2] = 0;
+
+
+            pallete[1, 0] = 0;
+            pallete[1, 1] = 255;
+            pallete[1, 2] = 0;
+
+
+            pallete[2, 0] = 0;
+            pallete[2, 1] = 0;
+            pallete[2, 2] = 255;
+
+            
+            pallete[3, 0] = 255;
+            pallete[3, 1] = 100;
+            pallete[3, 2] = 0;
+
+            
+            pallete[4, 0] = 0;
+            pallete[4, 1] = 255;
+            pallete[4, 2] = 100;
+
+            
+            pallete[5, 0] = 86;
+            pallete[5, 1] = 19;
+            pallete[5, 2] = 32;
+
+
+            pallete[6, 0] = 130;
+            pallete[6, 1] = 17;
+            pallete[6, 2] = 34;
+
+            
+            pallete[7, 0] = 255;
+            pallete[7, 1] = 103;
+            pallete[7, 2] = 90;
+
+            
+            pallete[8, 0] = 63;
+            pallete[8, 1] = 167;
+            pallete[8, 2] = 30;
+
+            
+            pallete[9, 0] = 155;
+            pallete[9, 1] = 11;
+            pallete[9, 2] = 132;
+
+           
+            pallete[10, 0] = 123;
+            pallete[10, 1] = 24;
+            pallete[10, 2] = 60;
+
+
+            pallete[11, 0] = 255;
+            pallete[11, 1] = 210;
+            pallete[11, 2] = 194;
+
+            
+            pallete[12, 0] = 218;
+            pallete[12, 1] = 190;
+            pallete[12, 2] = 210;
+
+
+            pallete[13, 0] = 203;
+            pallete[13, 1] = 250;
+            pallete[13, 2] = 239;
+
+
+            pallete[14, 0] = 234;
+            pallete[14, 1] = 249;
+            pallete[14, 2] = 226;
+            */
+
+
+            for (int x = 0; x < color.GetLength(0); x++)
+                for (int y = 0; y < color.GetLength(1); y++)
+                    for (int c = 0; c < clusterNum; c++)
+                    {
+                        int startPoint = c - 1 < 0 ? 0 : (centerNum[c - 1] + centerNum[c]) / 2;//0 보다 작으면 0
+                        int endPoint = c + 2 > clusterNum ? 255 : (centerNum[c] + centerNum[c + 1]) / 2;//클러스터개수 보다 크면 255
+                        if (startPoint <= color[x, y, 0] && color[x, y, 0] <= endPoint)
+                        {
+                           
+                            if (color[x, y, 0] == 255 && color[x, y, 1] == 255 && color[x, y, 2] == 255)
+                            {
+                                
+                                orignal[x, y, 0] = 255;
+                                orignal[x, y, 1] = 255;
+                                orignal[x, y, 2] = 255;
+                            }
+                            else
+                            {
+                                orignal[x, y, 0] = pallete[c, 0];
+                                orignal[x, y, 1] = pallete[c, 1];
+                                orignal[x, y, 2] = pallete[c, 2];
+                            }
+                        }
+                    }
+                
+        }
+        void Select(int num) {
+            for (int x = 0; x < color.GetLength(0); x++)
+                for (int y = 0; y < color.GetLength(1); y++)
+                {
+                    if (pallete[num, 0] == orignal[x, y, 0] &&
+                        pallete[num, 1] == orignal[x, y, 1] &&
+                        pallete[num, 2] == orignal[x, y, 2])
+                    {
+                        orignal[x, y, 0] = 255;
+                        orignal[x, y, 1] = 0;
+                        orignal[x, y, 2] = 0;
+                    }
+                    else {
+                        orignal[x, y, 0] = 0;
+                        orignal[x, y, 1] = 0;
+                        orignal[x, y, 2] = 0;
+                    }
+
+
+                    
+                }
+
+        }
+
+        public int[,,] getColor()
+        {
+            return color;
+        }
+
+    }
+}
